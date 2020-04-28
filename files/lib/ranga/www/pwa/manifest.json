@@ -1,0 +1,15 @@
+{
+  "name": "Ranga Webcon",
+  "short_name": "Ranga Webcon",
+  "display": "standalone",
+  "start_url": "/webcon/index.html?pwa",
+  "theme_color": "#08c",
+  "background_color": "#fff",
+  "icons": [
+    {
+      "src": "ranga.png",
+      "sizes": "192x192",
+      "type": "image/webp"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+
+. /etc/ranga/pub.sh
+
+START=60
+USE_PROCD=1
+
+start_service() {
+	ip=`uci get network.lan.ipaddr`
+	[ -z "$ip" ] && ip = "192.168.1.1"
+
+	procd_open_instance
+	procd_set_param command ${NSWA_PREFIX}/libexec/http302d "$ip"
+	procd_close_instance
+
+	procd_open_instance
+	procd_set_param command /usr/sbin/dnsmasq -C ${NSWA_PREFIX}/captive/dnsmasq.conf
+	procd_close_instance
+}
