@@ -1,0 +1,67 @@
+#!/bin/sh
+
+. /etc/ranga/pub.sh
+. ${NSWA_PREFIX}/lib/mwan.sh
+
+logger -t earlydial "start (version: 1.42-CMCC.SHANDONG-nswa_ranga)"
+
+sleep 3
+
+WAN=`uci get network.wan.ifname`
+
+a="0"
+while true ; do
+	if ifconfig "${WAN}" | grep "inet " >/dev/null 2>&1; then
+		break;
+	fi
+	sleep 3
+	a=$((${a}+1))
+	if [ "$a" = "17" ]; then
+		logger -t earlydial "WAN interface timeout"
+		exit 1
+	fi
+done
+
+a=`echo -ne "HEAD / HTTP/1.0\r\n\r\n" | nc 223.99.141.136 1000 | grep "^Date"`
+[ -z "$a" ] && a=`echo -ne "HEAD / HTTP/1.0\r\n\r\n" | nc 223.99.141.136 80 | grep "^Date"`
+
+time=`echo "$a" | cut -d " " -f 6`
+TZ=`echo "$a" | cut -d " " -f 7`
+
+y=`echo "$a" | cut -d " " -f 5`
+m=`echo $a | cut -d " " -f 4`
+d=`echo "$a" | cut -d " " -f 3`
+
+case "$m" in
+Jan) m='1' ;;
+Feb) m='2' ;;
+Mar) m='3' ;;
+Apr) m='4' ;;
+May) m='5' ;;
+Jun) m='6' ;;
+Jul) m='7' ;;
+Aug) m='8' ;;
+Sep) m='9' ;;
+Oct) m='10' ;;
+Nov) m='11' ;;
+Dec) m='12' ;;
+*)
+	logger -t earlydial "can not init, debug: m: $a"
+	exit
+esac
+
+
+if [ "$time" != "" ]; then
+	export TZ
+	date -s "${y}-${m}-${d} ${time}"
+
+	${NSWA_PREFIX}/libexec/action/network dialup netkeeper
+	logger -t earlydial "NSWA return this: $?"
+	for i in `uci show network | grep "^network.md.*=interface$" | sed 's/^[^\.]*\.\([^=]*\)=.*/\1/g'`; do
+		${NSWA_PREFIX}/libexec/action/network dialup "$i"
+		logger -t earlydial "NSWA return this: $? ($i)"
+	done
+else
+	logger -t earlydial "can not init"
+	#logger -t earlydial "debug: $a"
+fi
